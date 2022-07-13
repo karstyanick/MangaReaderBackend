@@ -227,5 +227,5 @@ app.post("/addManga", async function(req,res,next){
     res.send({id: uuidv4(), name: mangaName, poster: poster})
 });
 
-app.listen(403)
+app.listen(80)
 console.log("app listening on port 5000")
