@@ -104,8 +104,8 @@ async function getPagesFromChapters(chaptersObject, chaptersRange){
 }
 
 app.get("/", async function(req, res, next){
-    const rawData = await fs.readFileSync('./links.json');
-    const saveData = await fs.readFileSync('./save.json')
+    const rawData = await fs.readFileSync('links.json');
+    const saveData = await fs.readFileSync('save.json')
     let linksJson = {}
     let saveJson = {}
     if (rawData.length !== 0) {
@@ -133,7 +133,7 @@ app.post("/save", async function(req, res, next){
     const chapter = req.body.chapter
     const page = req.body.page
 
-    const rawData = await fs.readFileSync('./save.json');
+    const rawData = await fs.readFileSync('save.json');
     let saveJson = {}
 
     if (rawData.length !== 0) {
@@ -144,7 +144,7 @@ app.post("/save", async function(req, res, next){
         chapter: chapter,
         page: page
     }
-    await fs.writeFile('./save.json', JSON.stringify(saveComb, null, 2), err => {
+    await fs.writeFile('save.json', JSON.stringify(saveComb, null, 2), err => {
         if(err) throw err;
         console.log("Data saved");
     });
@@ -154,7 +154,7 @@ app.post("/save", async function(req, res, next){
 
 app.get("/getManga", async function(req,res,next){
     const mangaName = req.query.name
-    const rawData = await fs.readFileSync('./links.json');
+    const rawData = await fs.readFileSync('links.json');
     let linksJson = {}
     if (rawData !== "") {
         linksJson = JSON.parse(rawData);
@@ -174,7 +174,7 @@ app.get("/getChapter", async function(req,res,next){
     const mangaName = req.query.name
     const chapter = req.query.chapter
    
-    const rawData = await fs.readFileSync('./links.json');
+    const rawData = await fs.readFileSync('links.json');
     let linksJson = {}
     if (rawData.length !== 0) {
         linksJson = JSON.parse(rawData);
@@ -189,7 +189,7 @@ app.post("/addManga", async function(req,res,next){
     let mangaName = req.body.name
     let chapters = req.body.chapters
 
-    const rawData = await fs.readFileSync('./links.json');
+    const rawData = await fs.readFileSync('links.json');
     let linksJson = {}
 
     if (rawData.length !== 0) {
@@ -218,7 +218,7 @@ app.post("/addManga", async function(req,res,next){
         }
     }, {})
 
-    await fs.writeFile('./links.json', JSON.stringify(sorted, null, 2), err => {
+    await fs.writeFile('links.json', JSON.stringify(sorted, null, 2), err => {
         if(err) throw err;
         console.log("New data added");
     });
