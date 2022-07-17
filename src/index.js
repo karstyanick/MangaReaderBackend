@@ -6,6 +6,7 @@ const puppeteer = require("puppeteer")
 const fs = require("fs")
 var _ = require('lodash');
 const { v4: uuidv4 } = require('uuid');
+PORT = process.env.PORT
 
 const app = express();
 app.use(bodyParser.json())
@@ -227,5 +228,5 @@ app.post("/addManga", async function(req,res,next){
     res.send({id: uuidv4(), name: mangaName, poster: poster})
 });
 
-app.listen(80)
-console.log("app listening on port 80")
+app.listen(PORT)
+console.log(`app listening on port ${PORT}`)

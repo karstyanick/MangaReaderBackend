@@ -8,6 +8,7 @@
     "@testing-library/user-event": "^13.5.0",
     "axios": "^0.26.1",
     "cors": "^2.8.5",
+    "dotenv": "^16.0.1",
     "express": "^4.18.1",
     "lodash": "^4.17.21",
     "nodemon": "^2.0.15",
@@ -16,6 +17,7 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "dev": "nodemon ./src/index.js"
+    "dev": "PORT=5000 nodemon ./src/index.js",
+    "prod": "PORT=80 node ./src/index.js"
   }
 }
