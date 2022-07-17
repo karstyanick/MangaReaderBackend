@@ -6,11 +6,12 @@ const puppeteer = require("puppeteer")
 const fs = require("fs")
 var _ = require('lodash');
 const { v4: uuidv4 } = require('uuid');
-PORT = process.env.PORT
 
 const app = express();
 app.use(bodyParser.json())
 app.use(cors())
+
+let port = process.env.NODE_ENV === 'production' ? "80" : "5000";
 
 async function fetch(link, selector){
     const browser = await puppeteer.launch();
@@ -123,7 +124,8 @@ app.get("/", async function(req, res, next){
         posters: initPosterList,
         state: {
             currentChapter: saveJson.chapter,
-            currentPage: saveJson.page
+            currentPage: saveJson.page,
+            currentChapterNumber: saveJson.chapterNumber
         }
     }
 
@@ -133,6 +135,7 @@ app.get("/", async function(req, res, next){
 app.post("/save", async function(req, res, next){
     const chapter = req.body.chapter
     const page = req.body.page
+    const chapterNumber = req.body.chapterNumber
 
     const rawData = await fs.readFileSync('save.json');
     let saveJson = {}
@@ -143,7 +146,8 @@ app.post("/save", async function(req, res, next){
     const saveComb = {
         ...saveJson,
         chapter: chapter,
-        page: page
+        page: page,
+        chapterNumber: chapterNumber
     }
     await fs.writeFile('save.json', JSON.stringify(saveComb, null, 2), err => {
         if(err) throw err;
@@ -171,10 +175,14 @@ app.get("/getManga", async function(req,res,next){
 });
 
 app.get("/getChapter", async function(req,res,next){
-    
+
     const mangaName = req.query.name
     const chapter = req.query.chapter
    
+    console.log(mangaName)
+    console.log(chapter)
+
+
     const rawData = await fs.readFileSync('links.json');
     let linksJson = {}
     if (rawData.length !== 0) {
@@ -183,7 +191,10 @@ app.get("/getChapter", async function(req,res,next){
 
     const links = linksJson[mangaName][chapter]
     
-    res.send(links)
+
+    console.log(`reached getChapter call returned ${chapter, links}`)
+
+    res.send({chapter, links})
 });
 
 app.post("/addManga", async function(req,res,next){
@@ -225,8 +236,13 @@ app.post("/addManga", async function(req,res,next){
     });
     
 
-    res.send({id: uuidv4(), name: mangaName, poster: poster})
+    const chapterKeys = Object.keys(sorted[mangaName])
+    chapterKeys.pop()
+
+    console.log(JSON.stringify(chapterKeys))
+
+    res.send({metaData:{id: uuidv4(), name: mangaName, poster: poster}, chapters: chapterKeys})
 });
 
-app.listen(PORT)
-console.log(`app listening on port ${PORT}`)
+app.listen(port)
+console.log(`app listening on port ${port}`)
