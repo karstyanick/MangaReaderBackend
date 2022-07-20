@@ -32,7 +32,7 @@ async function fetch(link, selector){
 }
 
 function getPoster(htmlContent, mangaName){
-    let regexString = "https://cover.nep.li/cover/" + mangaName + ".jpg"
+    let regexString = "https://temp.compsci88.com/cover/" + mangaName + ".jpg"
     let regex = new RegExp(regexString,"g");
     let posterLink = [...htmlContent.matchAll(regex)].map(page => page[0])
     return posterLink[0]
