@@ -77,6 +77,18 @@ function generatePageObjects(htmlContent){
         pageObjects = pageLinks.map(link => ({"original": link}))
     }
 
+    if(pageObjects.length === 0){
+        regex = /https:\/\/official-complete-2\.eorzea\.us\/manga\/.*?\.png/g
+        duplicatedPageLinks = [...htmlContent.matchAll(regex)].map(page => page[0])
+        pageLinks = []
+        for (let i = 0; i < duplicatedPageLinks.length-6; i = i+2) {
+            pageLinks.push(duplicatedPageLinks[i]);
+        };
+        pageObjects = pageLinks.map(link => ({"original": link}))
+    }
+
+    
+
     return pageObjects
 }
 
@@ -84,21 +96,22 @@ function generateChapterObjects(htmlContent){
     const regex = /\/read-online\/.*?chapter-(.*?)-page-1\.html/g
     const chapterObjects = [...htmlContent.matchAll(regex)].map(page => ({[page[1]]: {"Chapter Link": "https://mangasee123.com" + page[0].replace("-page-1", "")}}))
     const chaptersObject = Object.assign({}, ...chapterObjects)
+    console.log(chaptersObject)
     return chaptersObject
 }
 
 async function getPagesFromChapters(chaptersObject, chaptersRange){
     const chapters = chaptersRange.split("-")
-    const start = chapters[0]
-    const end = chapters[1]
+    const start = parseInt(chapters[0])
+    const end = parseInt(chapters[1])
     let keys = Object.keys(chaptersObject);
     //keys = keys.reverse() 
     var completeObject = {}
     //Math.min(keys.length, 3)
-    for(let i = start; i<end; i++){
+    for(let i = start-1; i < end; i++){
         const pageHtmlContent = await fetch(chaptersObject[keys[i]]["Chapter Link"], "")
         const pageObjects = generatePageObjects(pageHtmlContent)
-        completeObject = Object.assign(completeObject, {[keys[i]]: pageObjects})
+        completeObject = Object.assign(completeObject, {[i+1]: pageObjects})
         chaptersObject[keys[i]]["pagelinks"] = pageObjects
         console.log("Chapter " + chaptersObject[keys[i]]["Chapter Link"] + " done")
     }
@@ -143,11 +156,11 @@ app.post("/save", async function(req, res, next){
     if (rawData.length !== 0) {
         saveJson = JSON.parse(rawData);
     }
+
     const saveComb = {
-        ...saveJson,
-        chapter: chapter,
-        page: page,
-        chapterNumber: chapterNumber
+        chapter: {...saveJson.chapter, ...chapter},
+        page: {...saveJson.page, ...page},
+        chapterNumber: {...saveJson.chapterNumber, ...chapterNumber}
     }
     await fs.writeFile('save.json', JSON.stringify(saveComb, null, 2), err => {
         if(err) throw err;
