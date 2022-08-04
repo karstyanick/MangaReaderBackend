@@ -8,12 +8,12 @@ var _ = require('lodash');
 const { v4: uuidv4 } = require('uuid');
 const expressAsyncHandler = require("express-async-handler");
 const createError = require('http-errors')
+const http = require("http")
+const https = require('https');
 
 const app = express();
 app.use(bodyParser.json())
 app.use(cors())
-
-let port = process.env.NODE_ENV === 'production' ? "80" : "5000";
 
 async function fetch(link, selector){
     const browser = await puppeteer.launch();
@@ -381,5 +381,31 @@ app.post("/addManga", expressAsyncHandler(authenticateUser), async function(req,
     res.send({metaData:{id: uuidv4(), name: mangaName, poster: poster}, chapters: chapterKeys})
 });
 
-app.listen(port)
-console.log(`app listening on port ${port}`)
+
+if(process.env.NODE_ENV === 'production'){
+
+    const privateKey = fs.readFileSync('/etc/letsencrypt/live/mangareaderbackend.lol/privkey.pem', 'utf8');
+    const certificate = fs.readFileSync('/etc/letsencrypt/live/mangareaderbackend.lol/cert.pem', 'utf8');
+    const ca = fs.readFileSync('/etc/letsencrypt/live/mangareaderbackend.lol/chain.pem', 'utf8');
+
+    const credentials = {
+        key: privateKey,
+        cert: certificate,
+        ca: ca
+    };
+
+    const httpsServer = https.createServer(credentials, app);
+    httpsServer.listen(443, () => {
+        console.log('HTTPS Server running on port 443');
+    });
+}else {
+    const httpServer = http.createServer(app);
+
+    httpServer.listen(5000, () => {
+        console.log('HTTP Server running on port 5000');
+    });
+}
+
+
+
+
