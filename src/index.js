@@ -260,9 +260,9 @@ app.post("/addManga", async function(req,res,next){
 
 if(process.env.NODE_ENV === 'production'){
 
-    const privateKey = fs.readFileSync('/etc/letsencrypt/live/mangareaderbackend.lol/privkey1.pem', 'utf8');
-    const certificate = fs.readFileSync('/etc/letsencrypt/live/mangareaderbackend.lol/cert1.pem', 'utf8');
-    const ca = fs.readFileSync('/etc/letsencrypt/live/mangareaderbackend.lol/chain1.pem', 'utf8');
+    const privateKey = fs.readFileSync('/etc/letsencrypt/live/mangareaderbackend.lol/privkey.pem', 'utf8');
+    const certificate = fs.readFileSync('/etc/letsencrypt/live/mangareaderbackend.lol/cert.pem', 'utf8');
+    const ca = fs.readFileSync('/etc/letsencrypt/live/mangareaderbackend.lol/chain.pem', 'utf8');
 
     const credentials = {
         key: privateKey,
