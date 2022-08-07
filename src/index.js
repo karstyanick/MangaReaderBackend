@@ -10,10 +10,20 @@ const expressAsyncHandler = require("express-async-handler");
 const createError = require('http-errors')
 const http = require("http")
 const https = require('https');
+const bcrypt = require("bcrypt")
+const cookieParser = require("cookie-parser")
 
 const app = express();
 app.use(bodyParser.json())
-app.use(cors())
+app.use(cors({
+    "origin": "http://localhost:3000",
+    "methods": "GET,HEAD,PUT,PATCH,POST,DELETE",
+    "preflightContinue": false,
+    "optionsSuccessStatus": 204,
+    "credentials": true
+}));
+
+app.use(cookieParser());
 
 async function fetch(link, selector){
     const browser = await puppeteer.launch();
@@ -89,7 +99,15 @@ function generatePageObjects(htmlContent){
         pageObjects = pageLinks.map(link => ({"original": link}))
     }
 
-    
+    if(pageObjects.length === 0){
+        regex = /https:\/\/official-ongoing-1.ivalice.us\/manga\/.*?.png/g
+        duplicatedPageLinks = [...htmlContent.matchAll(regex)].map(page => page[0])
+        pageLinks = []
+        for (let i = 0; i < duplicatedPageLinks.length-6; i = i+2) {
+            pageLinks.push(duplicatedPageLinks[i]);
+        };
+        pageObjects = pageLinks.map(link => ({"original": link}))
+    }
 
     return pageObjects
 }
@@ -133,7 +151,7 @@ class Session {
 
 const sessions = {}
 
-const authenticateUser = async (req, res) => {
+const authenticateUser = async (req, res, next) => {
     if (!req.cookies) {
         throw createError(401, 'No cookies present')
     }
@@ -143,6 +161,9 @@ const authenticateUser = async (req, res) => {
         throw createError(401, 'No session token in cookies')
     }
 
+    console.log(`sessions: ${JSON.stringify(sessions)}`)
+    console.log(`SessionToken: ${sessionToken}`)
+    
     userSession = sessions[sessionToken]
     if (!userSession) {
         throw createError(401, 'session not found')
@@ -152,33 +173,44 @@ const authenticateUser = async (req, res) => {
         throw createError(401, 'session expired')
     }
 
-    const newSessionToken = uuid.v4()
+    const username = sessions[sessionToken].username
+    
+    console.log(sessions)
+
+    const newSessionToken = uuidv4()
 
     const now = new Date()
-    const expiresAt = new Date(+now + 120 * 1000)
+    const expiresAt = new Date(+now + 10000 * 1000)
     const session = new Session(userSession.username, expiresAt)
 
     sessions[newSessionToken] = session
     delete sessions[sessionToken]
 
+    res.locals.username = username;  
+
     res.cookie("session_token", newSessionToken, { expires: expiresAt })
-    res.end()
+    next()
 }
 
 app.post("/signup", expressAsyncHandler(async(req, res) => {
-    const userName = req.body.userName
+    const username = req.body.username
     const password = req.body.password
 
-    if(!userName || !password){
+    const users = await fs.readFileSync('users.json')
+    const oldUsers = JSON.parse(users)
+
+    if(!username || !password){
         throw createError(404)
     }
+    if(oldUsers[username]){
+        throw createError(400, "Username already exists")
+    }
+
     bcrypt.hash(password, 10, async function(err, hash) {
-        
-        const users = await fs.readFileSync('users.json')
 
         const usersUpdated = {
-            ...users,
-            userName: hash
+            ...oldUsers,
+            [username]: hash
         }
 
         await fs.writeFile('users.json', JSON.stringify(usersUpdated, null, 2), err => {
@@ -186,16 +218,21 @@ app.post("/signup", expressAsyncHandler(async(req, res) => {
             console.log("User saved");
         });
 
-        const sessionToken = uuid.v4()
+        fs.closeSync(fs.openSync(`links${username}.json`, 'w'))
+        fs.closeSync(fs.openSync(`save${username}.json`, 'w'))
+
+        const sessionToken = uuidv4()
 
         const now = new Date()
         const expiresAt = new Date(+now + 120 * 1000)
 
-        const session = new Session(userName, expiresAt)
+        const session = new Session(username, expiresAt)
         sessions[sessionToken] = session
 
+        console.log(sessions)
+
         res.cookie("session_token", sessionToken, { expires: expiresAt })
-        res.end()
+        res.send(username)
     });
 }))
 
@@ -208,22 +245,27 @@ app.post("/login", expressAsyncHandler(async (req, res) => {
 
     const users = await fs.readFileSync('users.json')
 
-    const hash = users[username]
+    const usersObj = JSON.parse(users)
 
-    bcrypt.compare(password, hash, function(err, result) {
-        if(!result) throw createError(401, 'Wrong password')
-    });
+    const hash = usersObj[username]
 
-    const sessionToken = uuid.v4()
-
-    const now = new Date()
-    const expiresAt = new Date(+now + 120 * 1000)
-
-    const session = new Session(username, expiresAt)
-    sessions[sessionToken] = session
-
-    res.cookie("session_token", sessionToken, { expires: expiresAt })
-    res.end()
+    console.log(hash)
+        bcrypt.compare(password, hash, async function(err, result) {
+            if(result) {
+                const sessionToken = uuidv4()
+    
+                const now = new Date()
+                const expiresAt = new Date(+now + 120 * 1000)
+        
+                const session = new Session(username, expiresAt)
+                sessions[sessionToken] = session
+        
+                res.cookie("session_token", sessionToken, { expires: expiresAt })
+                res.send(username)
+            }else{
+                res.send("Wrong password")
+            }
+        });
 }))
 
 app.post("/logout", expressAsyncHandler(async (req, res) => {
@@ -243,8 +285,9 @@ app.post("/logout", expressAsyncHandler(async (req, res) => {
 }))
 
 app.get("/", expressAsyncHandler(authenticateUser), async function(req, res, next){
-    const rawData = await fs.readFileSync('links.json');
-    const saveData = await fs.readFileSync('save.json')
+    const username = res.locals.username
+    const rawData = await fs.readFileSync(`links${username}.json`);
+    const saveData = await fs.readFileSync(`save${username}.json`)
     let linksJson = {}
     let saveJson = {}
     if (rawData.length !== 0) {
@@ -258,6 +301,7 @@ app.get("/", expressAsyncHandler(authenticateUser), async function(req, res, nex
     const initPosterList = mangaKeys.map(manga => ({id: uuidv4(), name: manga, poster: linksJson[manga].poster}));
 
     const initObject = {
+        username: username,
         posters: initPosterList,
         state: {
             currentChapter: saveJson.chapter,
@@ -273,8 +317,10 @@ app.post("/save", expressAsyncHandler(authenticateUser), async function(req, res
     const chapter = req.body.chapter
     const page = req.body.page
     const chapterNumber = req.body.chapterNumber
+    const username = res.locals.username
 
-    const rawData = await fs.readFileSync('save.json');
+
+    const rawData = await fs.readFileSync(`save${username}.json`);
     let saveJson = {}
 
     if (rawData.length !== 0) {
@@ -286,7 +332,7 @@ app.post("/save", expressAsyncHandler(authenticateUser), async function(req, res
         page: {...saveJson.page, ...page},
         chapterNumber: {...saveJson.chapterNumber, ...chapterNumber}
     }
-    await fs.writeFile('save.json', JSON.stringify(saveComb, null, 2), err => {
+    await fs.writeFile(`save${username}.json`, JSON.stringify(saveComb, null, 2), err => {
         if(err) throw err;
         console.log("Data saved");
     });
@@ -296,7 +342,8 @@ app.post("/save", expressAsyncHandler(authenticateUser), async function(req, res
 
 app.get("/getManga", expressAsyncHandler(authenticateUser), async function(req,res,next){
     const mangaName = req.query.name
-    const rawData = await fs.readFileSync('links.json');
+    const username = res.locals.username
+    const rawData = await fs.readFileSync(`links${username}.json`);
     let linksJson = {}
     if (rawData !== "") {
         linksJson = JSON.parse(rawData);
@@ -315,12 +362,13 @@ app.get("/getChapter", expressAsyncHandler(authenticateUser), async function(req
 
     const mangaName = req.query.name
     const chapter = req.query.chapter
-   
+    const username = res.locals.username
+
     console.log(mangaName)
     console.log(chapter)
 
 
-    const rawData = await fs.readFileSync('links.json');
+    const rawData = await fs.readFileSync(`links${username}.json`);
     let linksJson = {}
     if (rawData.length !== 0) {
         linksJson = JSON.parse(rawData);
@@ -337,8 +385,9 @@ app.get("/getChapter", expressAsyncHandler(authenticateUser), async function(req
 app.post("/addManga", expressAsyncHandler(authenticateUser), async function(req,res,next){
     let mangaName = req.body.name
     let chapters = req.body.chapters
+    const username = res.locals.username
 
-    const rawData = await fs.readFileSync('links.json');
+    const rawData = await fs.readFileSync(`links${username}.json`);
     let linksJson = {}
 
     if (rawData.length !== 0) {
@@ -367,7 +416,7 @@ app.post("/addManga", expressAsyncHandler(authenticateUser), async function(req,
         }
     }, {})
 
-    await fs.writeFile('links.json', JSON.stringify(sorted, null, 2), err => {
+    await fs.writeFile(`links${username}.json`, JSON.stringify(sorted, null, 2), err => {
         if(err) throw err;
         console.log("New data added");
     });
