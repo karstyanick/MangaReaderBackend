@@ -16,7 +16,7 @@ const cookieParser = require("cookie-parser")
 const app = express();
 app.use(bodyParser.json())
 app.use(cors({
-    "origin": "http://localhost:3000",
+    "origin": "https://62f023c38e5c0c5944e1993d--fluffy-jalebi-fdc9ee.netlify.app",
     "methods": "GET,HEAD,PUT,PATCH,POST,DELETE",
     "preflightContinue": false,
     "optionsSuccessStatus": 204,
