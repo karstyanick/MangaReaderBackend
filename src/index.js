@@ -15,7 +15,7 @@ const cookieParser = require("cookie-parser")
 
 
 //const origin = "http://localhost:3000"
-const origin = "https://62f023c38e5c0c5944e1993d--fluffy-jalebi-fdc9ee.netlify.app"
+const origin = "https://62f0c3e9488b4a40a3a0716d--fluffy-jalebi-fdc9ee.netlify.app"
 
 const app = express();
 app.use(bodyParser.json())
