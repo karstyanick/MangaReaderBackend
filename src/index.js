@@ -14,8 +14,8 @@ const bcrypt = require("bcrypt")
 const cookieParser = require("cookie-parser")
 
 
-const origin = "http://localhost:3000"
-//const origin = "https://62f023c38e5c0c5944e1993d--fluffy-jalebi-fdc9ee.netlify.app"
+//const origin = "http://localhost:3000"
+const origin = "https://62f023c38e5c0c5944e1993d--fluffy-jalebi-fdc9ee.netlify.app"
 
 const app = express();
 app.use(bodyParser.json())
