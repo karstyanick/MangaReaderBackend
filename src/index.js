@@ -13,10 +13,14 @@ const https = require('https');
 const bcrypt = require("bcrypt")
 const cookieParser = require("cookie-parser")
 
+
+const origin = "http://localhost:3000"
+//const origin = "https://62f023c38e5c0c5944e1993d--fluffy-jalebi-fdc9ee.netlify.app"
+
 const app = express();
 app.use(bodyParser.json())
 app.use(cors({
-    "origin": "https://62f023c38e5c0c5944e1993d--fluffy-jalebi-fdc9ee.netlify.app",
+    "origin": origin,
     "methods": "GET,HEAD,PUT,PATCH,POST,DELETE",
     "preflightContinue": false,
     "optionsSuccessStatus": 204,
@@ -188,7 +192,7 @@ const authenticateUser = async (req, res, next) => {
 
     res.locals.username = username;  
 
-    res.cookie("session_token", newSessionToken, { expires: expiresAt })
+    res.cookie("session_token", newSessionToken, { expires: expiresAt, SameSite: "None"})
     next()
 }
 
@@ -231,7 +235,7 @@ app.post("/signup", expressAsyncHandler(async(req, res) => {
 
         console.log(sessions)
 
-        res.cookie("session_token", sessionToken, { expires: expiresAt })
+        res.cookie("session_token", sessionToken, { expires: expiresAt, SameSite: "None"})
         res.send(username)
     });
 }))
@@ -260,7 +264,7 @@ app.post("/login", expressAsyncHandler(async (req, res) => {
                 const session = new Session(username, expiresAt)
                 sessions[sessionToken] = session
         
-                res.cookie("session_token", sessionToken, { expires: expiresAt })
+                res.cookie("session_token", sessionToken, { expires: expiresAt, SameSite: "None"})
                 res.send(username)
             }else{
                 res.send("Wrong password")
