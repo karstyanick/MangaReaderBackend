@@ -192,7 +192,7 @@ const authenticateUser = async (req, res, next) => {
 
     res.locals.username = username;  
 
-    res.cookie("session_token", newSessionToken, { expires: expiresAt, SameSite: "None"})
+    res.cookie("session_token", newSessionToken, { expires: expiresAt, SameSite: "None", secure: true})
     next()
 }
 
@@ -235,7 +235,7 @@ app.post("/signup", expressAsyncHandler(async(req, res) => {
 
         console.log(sessions)
 
-        res.cookie("session_token", sessionToken, { expires: expiresAt, SameSite: "None"})
+        res.cookie("session_token", sessionToken, { expires: expiresAt, SameSite: "None", secure: true})
         res.send(username)
     });
 }))
@@ -264,7 +264,7 @@ app.post("/login", expressAsyncHandler(async (req, res) => {
                 const session = new Session(username, expiresAt)
                 sessions[sessionToken] = session
         
-                res.cookie("session_token", sessionToken, { expires: expiresAt, SameSite: "None"})
+                res.cookie("session_token", sessionToken, { expires: expiresAt, SameSite: "None", secure: true})
                 res.send(username)
             }else{
                 res.send("Wrong password")
