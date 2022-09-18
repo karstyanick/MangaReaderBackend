@@ -12,10 +12,10 @@ const http = require("http")
 const https = require('https');
 const bcrypt = require("bcrypt")
 const cookieParser = require("cookie-parser")
-
-
-//const origin = "http://localhost:3000"
-const origin = "https://62f0c3e9488b4a40a3a0716d--fluffy-jalebi-fdc9ee.netlify.app"
+const allMangas = {}
+let allMangasReturn;
+const origin = "http://localhost:3000"
+//const origin = "https://62f0c3e9488b4a40a3a0716d--fluffy-jalebi-fdc9ee.netlify.app"
 
 const app = express();
 app.use(bodyParser.json())
@@ -113,32 +113,76 @@ function generatePageObjects(htmlContent){
         pageObjects = pageLinks.map(link => ({"original": link}))
     }
 
+    if(pageObjects.length === 0){
+        regex = /https:\/\/temp\.compsci88\.com\/manga\/.*?.png/g
+        duplicatedPageLinks = [...htmlContent.matchAll(regex)].map(page => page[0])
+        pageLinks = []
+        for (let i = 0; i < duplicatedPageLinks.length-6; i = i+2) {
+            pageLinks.push(duplicatedPageLinks[i]);
+        };
+        pageObjects = pageLinks.map(link => ({"original": link}))
+    }
+
+    if(pageObjects.length === 0){
+        regex = /https:\/\/scans-ongoing-1\.lastation\.us\/manga\/.*?.png/g
+        duplicatedPageLinks = [...htmlContent.matchAll(regex)].map(page => page[0])
+        pageLinks = []
+        for (let i = 0; i < duplicatedPageLinks.length-6; i = i+2) {
+            pageLinks.push(duplicatedPageLinks[i]);
+        };
+        pageObjects = pageLinks.map(link => ({"original": link}))
+    }
+
     return pageObjects
 }
 
 function generateChapterObjects(htmlContent){
     const regex = /\/read-online\/.*?chapter-(.*?)-page-1\.html/g
-    const chapterObjects = [...htmlContent.matchAll(regex)].map(page => ({[page[1]]: {"Chapter Link": "https://mangasee123.com" + page[0].replace("-page-1", "")}}))
+    const chapterObjects = [...htmlContent.matchAll(regex)].map(page => ({[page[1].replace("-index-2","")]: {"Chapter Link": "https://mangasee123.com" + page[0].replace("-page-1", "")}}))
     const chaptersObject = Object.assign({}, ...chapterObjects)
     console.log(chaptersObject)
     return chaptersObject
 }
 
 async function getPagesFromChapters(chaptersObject, chaptersRange){
+
+    const filterdObject = Object.fromEntries(Object.entries(chaptersObject).filter(([key]) => parseFloat(key) % 1 === 0));
+    
     const chapters = chaptersRange.split("-")
-    const start = parseInt(chapters[0])
-    const end = parseInt(chapters[1])
-    let keys = Object.keys(chaptersObject);
-    //keys = keys.reverse() 
-    var completeObject = {}
-    //Math.min(keys.length, 3)
-    for(let i = start-1; i < end; i++){
-        const pageHtmlContent = await fetch(chaptersObject[keys[i]]["Chapter Link"], "")
-        const pageObjects = generatePageObjects(pageHtmlContent)
-        completeObject = Object.assign(completeObject, {[i+1]: pageObjects})
-        chaptersObject[keys[i]]["pagelinks"] = pageObjects
-        console.log("Chapter " + chaptersObject[keys[i]]["Chapter Link"] + " done")
+    let start = 1;
+    let end = 5;
+
+    if(chaptersRange === "latest"){
+        start = Object.keys(filterdObject).length
+        end = Object.keys(filterdObject).length
     }
+    else if(chaptersRange === "first"){
+        start = 1
+        end = 10
+    }
+    else{
+        start = parseInt(chapters[0])
+        end = parseInt(chapters[1])
+    }
+    try{
+        if(end+1 > filterdObject.length){
+            throw new Error("Requesting chapter that does not exist")
+        }
+        let keys = Object.keys(filterdObject);
+        
+        var completeObject = {}
+        for(let i = start-1; i < end; i++){
+            const pageHtmlContent = await fetch(filterdObject[keys[i]]["Chapter Link"], "")
+            const pageObjects = generatePageObjects(pageHtmlContent)
+            completeObject = Object.assign(completeObject, {[i+1]: pageObjects})
+            filterdObject[keys[i]]["pagelinks"] = pageObjects
+            console.log("Chapter " + filterdObject[keys[i]]["Chapter Link"] + " done")
+        }
+    }
+    catch(e){
+        console.log(e)
+    }
+
     return completeObject
 }
 
@@ -311,7 +355,8 @@ app.get("/", expressAsyncHandler(authenticateUser), async function(req, res, nex
             currentChapter: saveJson.chapter,
             currentPage: saveJson.page,
             currentChapterNumber: saveJson.chapterNumber
-        }
+        },
+        availableMangas: allMangasReturn
     }
 
     res.send(initObject)
@@ -324,6 +369,12 @@ app.post("/save", expressAsyncHandler(authenticateUser), async function(req, res
     const username = res.locals.username
 
 
+    await saveState(chapter, page, chapterNumber, username)
+
+    res.send("success")
+})
+
+async function saveState(chapter, page, chapterNumber, username){
     const rawData = await fs.readFileSync(`save${username}.json`);
     let saveJson = {}
 
@@ -340,9 +391,7 @@ app.post("/save", expressAsyncHandler(authenticateUser), async function(req, res
         if(err) throw err;
         console.log("Data saved");
     });
-
-    res.send("success")
-})
+}
 
 app.get("/getManga", expressAsyncHandler(authenticateUser), async function(req,res,next){
     const mangaName = req.query.name
@@ -425,6 +474,9 @@ app.post("/addManga", expressAsyncHandler(authenticateUser), async function(req,
         console.log("New data added");
     });
     
+    const startChapter = Object.keys(completeObject)[0]
+
+    saveState({[mangaName]:saveObject[mangaName][startChapter]}, {[mangaName]:0}, {[mangaName]:startChapter}, username)
 
     const chapterKeys = Object.keys(sorted[mangaName])
     chapterKeys.pop()
@@ -447,12 +499,52 @@ if(process.env.NODE_ENV === 'production'){
         ca: ca
     };
 
+    axios.get("https://mangasee123.com/directory/")
+    .then(function (response){
+
+        const regex = /vm\.FullDirectory = ({.*]}]})/
+        const directory = response.data.match(regex)
+        
+        const regex2 = /"i":"(.*?)","s":"(.*?)"/g
+        let array;
+        while (array = regex2.exec(directory[1])) {
+            allMangas[array[2]] = array[1]
+        }
+
+        allMangasReturn = Object.keys(allMangas).map(manga => {return {label: manga, id: allMangas[manga]}})
+
+//        fs.writeFile("test.txt", JSON.stringify(allMangas, null, 2),()=>{
+//            console.log("success")
+//        })
+    }).catch(function (e) {
+        console.log(e)
+    })
+
     const httpsServer = https.createServer(credentials, app);
     httpsServer.listen(443, () => {
         console.log('HTTPS Server running on port 443');
     });
 }else {
     const httpServer = http.createServer(app);
+
+
+    axios.get("https://mangasee123.com/directory/")
+    .then(function (response){
+
+        const regex = /vm\.FullDirectory = ({.*]}]})/
+        const directory = response.data.match(regex)
+        
+        const regex2 = /"i":"(.*?)","s":"(.*?)"/g
+        let array;
+        while (array = regex2.exec(directory[1])) {
+            allMangas[array[2]] = array[1]
+        }
+
+        allMangasReturn = Object.keys(allMangas).map(manga => {return {label: manga, id: allMangas[manga]}})
+    }).catch(function (e) {
+        console.log(e)
+    })
+
 
     httpServer.listen(5000, () => {
         console.log('HTTP Server running on port 5000');
