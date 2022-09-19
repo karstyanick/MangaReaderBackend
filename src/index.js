@@ -167,7 +167,7 @@ async function getPagesFromChapters(chaptersObject, chaptersRange){
     }
 
     try{
-        if(start > [keys.length - 1]){
+        if(start > keys[keys.length - 1]){
             return {}
         }
 
