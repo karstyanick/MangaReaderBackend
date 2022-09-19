@@ -15,7 +15,7 @@ const cookieParser = require("cookie-parser")
 const allMangas = {}
 let allMangasReturn;
 //const origin = "http://localhost:3000"
-const origin = "https://6327c9da654405355b128f9e--fluffy-jalebi-fdc9ee.netlify.app"
+const origin = "https://fluffy-jalebi-fdc9ee.netlify.app" //REMOVE BACKSLASH FROM END !!!!!!
 
 const app = express();
 app.use(bodyParser.json())
