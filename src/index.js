@@ -145,16 +145,17 @@ function generateChapterObjects(htmlContent){
 }
 
 async function getPagesFromChapters(chaptersObject, chaptersRange){
+    const keys = Object.keys(chaptersObject).map(key => parseFloat(key)).sort(function(a,b) { return a - b;})
+    const wholeChapters = Object.fromEntries(Object.entries(chaptersObject).filter(([key]) => parseFloat(key) % 1 === 0));
+    const dotChapters = Object.fromEntries(Object.entries(chaptersObject).filter(([key]) => parseFloat(key) % 1 !== 0));
 
-    const filterdObject = Object.fromEntries(Object.entries(chaptersObject).filter(([key]) => parseFloat(key) % 1 === 0));
-    
     const chapters = chaptersRange.split("-")
     let start = 1;
     let end = 5;
 
     if(chaptersRange === "latest"){
-        start = Object.keys(filterdObject).length
-        end = Object.keys(filterdObject).length
+        start = parseInt(keys[keys.length - 1])
+        end = parseInt(keys[keys.length - 1])
     }
     else if(chaptersRange === "first"){
         start = 1
@@ -164,19 +165,32 @@ async function getPagesFromChapters(chaptersObject, chaptersRange){
         start = parseInt(chapters[0])
         end = parseInt(chapters[1])
     }
+
     try{
-        if(end+1 > filterdObject.length){
-            throw new Error("Requesting chapter that does not exist")
+        if(start > [keys.length - 1]){
+            return {}
         }
-        let keys = Object.keys(filterdObject);
-        
+
+        if(end > keys[keys.length - 1]){
+            end = keys[keys.length - 1]
+        }
+
         var completeObject = {}
-        for(let i = start-1; i < end; i++){
-            const pageHtmlContent = await fetch(filterdObject[keys[i]]["Chapter Link"], "")
-            const pageObjects = generatePageObjects(pageHtmlContent)
-            completeObject = Object.assign(completeObject, {[i+1]: pageObjects})
-            filterdObject[keys[i]]["pagelinks"] = pageObjects
-            console.log("Chapter " + filterdObject[keys[i]]["Chapter Link"] + " done")
+        for(let i = start; i <= end; i++){
+            if(wholeChapters[i]){
+                const pageHtmlContent = await fetch(wholeChapters[i]["Chapter Link"], "")
+                const pageObjects = generatePageObjects(pageHtmlContent)
+                completeObject = Object.assign(completeObject, {[i]: pageObjects})
+                console.log("Chapter " + wholeChapters[i]["Chapter Link"] + " done")
+            }
+            for(let j = 1; j < 10; j++){
+                if(dotChapters[`${i}.${j}`]){
+                    const pageHtmlContent = await fetch(dotChapters[`${i}.${j}`]["Chapter Link"], "")
+                    const pageObjects = generatePageObjects(pageHtmlContent)
+                    completeObject = Object.assign(completeObject, {[`${i}.${j}`]: pageObjects})
+                    console.log("Chapter " + dotChapters[`${i}.${j}`]["Chapter Link"] + " done")
+                }
+            }
         }
     }
     catch(e){
@@ -403,8 +417,7 @@ app.get("/getManga", expressAsyncHandler(authenticateUser), async function(req,r
     }
 
     const links = linksJson[mangaName]
-    const chapterKeys = Object.keys(links)
-    chapterKeys.pop()
+    const chapterKeys = Object.keys(links).filter( key => key !== "poster").map(key => parseFloat(key)).sort(function(a,b) { return a - b;}).map(key => key.toString())
 
     console.log(chapterKeys)
 
@@ -474,12 +487,9 @@ app.post("/addManga", expressAsyncHandler(authenticateUser), async function(req,
         console.log("New data added");
     });
     
-    const startChapter = Object.keys(completeObject)[0]
+    const chapterKeys = Object.keys(sorted[mangaName]).filter( key => key !== "poster").map(key => parseFloat(key)).sort(function(a,b) { return a - b;}).map(key => key.toString())
 
-    saveState({[mangaName]:saveObject[mangaName][startChapter]}, {[mangaName]:0}, {[mangaName]:startChapter}, username)
-
-    const chapterKeys = Object.keys(sorted[mangaName])
-    chapterKeys.pop()
+    saveState({[mangaName]:saveObject[mangaName][chapterKeys[0]]}, {[mangaName]:0}, {[mangaName]:chapterKeys[0]}, username)
 
     console.log(JSON.stringify(chapterKeys))
 
