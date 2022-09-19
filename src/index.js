@@ -14,8 +14,8 @@ const bcrypt = require("bcrypt")
 const cookieParser = require("cookie-parser")
 const allMangas = {}
 let allMangasReturn;
-const origin = "http://localhost:3000"
-//const origin = "https://62f0c3e9488b4a40a3a0716d--fluffy-jalebi-fdc9ee.netlify.app"
+//const origin = "http://localhost:3000"
+const origin = "https://fluffy-jalebi-fdc9ee.netlify.app/"
 
 const app = express();
 app.use(bodyParser.json())
