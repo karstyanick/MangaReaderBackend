@@ -253,7 +253,7 @@ const authenticateUser = async (req, res, next) => {
     const newSessionToken = uuidv4()
 
     const now = new Date()
-    const expiresAt = new Date(+now + 10000 * 1000)
+    const expiresAt = new Date(+now + 2629800000)
     const session = new Session(userSession.username, expiresAt, now)
 
     sessions[newSessionToken] = session
@@ -299,7 +299,7 @@ app.post("/signup", expressAsyncHandler(async(req, res) => {
         const sessionToken = uuidv4()
 
         const now = new Date()
-        const expiresAt = new Date(+now + 120 * 1000)
+        const expiresAt = new Date(+now + 2629800000)
 
         const session = new Session(username, expiresAt, now)
         sessions[sessionToken] = session
@@ -330,7 +330,7 @@ app.post("/login", expressAsyncHandler(async (req, res) => {
             const sessionToken = uuidv4()
 
             const now = new Date()
-            const expiresAt = new Date(+now + 120 * 1000)
+            const expiresAt = new Date(+now + 2629800000)
     
             const session = new Session(username, expiresAt, now)
             sessions[sessionToken] = session
