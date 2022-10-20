@@ -39,8 +39,12 @@ async function fetch(link, selector){
         browser.close()
         return htmlContent
     }else{
-        await page.waitForSelector(selector)
-        await page.click(selector)
+        try{
+            await page.waitForSelector(selector)
+            await page.click(selector)
+        }catch{
+            console.log("selector not found")
+        }
         const htmlContent = await page.content();
         browser.close()
         return htmlContent
@@ -133,6 +137,16 @@ function generatePageObjects(htmlContent){
         pageObjects = pageLinks.map(link => ({"original": link}))
     }
 
+    if(pageObjects.length === 0){
+        regex = /https:\/\/scans-ongoing-2\.planeptune\.us\/manga\/.*?.png/g
+        duplicatedPageLinks = [...htmlContent.matchAll(regex)].map(page => page[0])
+        pageLinks = []
+        for (let i = 0; i < duplicatedPageLinks.length-6; i = i+2) {
+            pageLinks.push(duplicatedPageLinks[i]);
+        };
+        pageObjects = pageLinks.map(link => ({"original": link}))
+    }
+
     return pageObjects
 }
 
@@ -140,7 +154,6 @@ function generateChapterObjects(htmlContent){
     const regex = /\/read-online\/.*?chapter-(.*?)-page-1\.html/g
     const chapterObjects = [...htmlContent.matchAll(regex)].map(page => ({[page[1].replace("-index-2","")]: {"Chapter Link": "https://mangasee123.com" + page[0].replace("-page-1", "")}}))
     const chaptersObject = Object.assign({}, ...chapterObjects)
-    console.log(chaptersObject)
     return chaptersObject
 }
 
@@ -201,9 +214,10 @@ async function getPagesFromChapters(chaptersObject, chaptersRange){
 }
 
 class Session {
-    constructor(username, expiresAt) {
+    constructor(username, expiresAt, lastCall) {
         this.username = username
         this.expiresAt = expiresAt
+        this.lastCall = lastCall
     }
 
     isExpired() {
@@ -224,7 +238,6 @@ const authenticateUser = async (req, res, next) => {
     }
 
     console.log(`sessions: ${JSON.stringify(sessions)}`)
-    console.log(`SessionToken: ${sessionToken}`)
     
     userSession = sessions[sessionToken]
     if (!userSession) {
@@ -237,18 +250,18 @@ const authenticateUser = async (req, res, next) => {
 
     const username = sessions[sessionToken].username
     
-    console.log(sessions)
-
     const newSessionToken = uuidv4()
 
     const now = new Date()
     const expiresAt = new Date(+now + 10000 * 1000)
-    const session = new Session(userSession.username, expiresAt)
+    const session = new Session(userSession.username, expiresAt, now)
 
     sessions[newSessionToken] = session
     delete sessions[sessionToken]
 
-    res.locals.username = username;  
+    res.locals.username = username;
+
+    console.log(`Call by user ${username}`)
 
     res.cookie("session_token", newSessionToken, { expires: expiresAt, sameSite:'none', secure: true})
     next()
@@ -288,9 +301,10 @@ app.post("/signup", expressAsyncHandler(async(req, res) => {
         const now = new Date()
         const expiresAt = new Date(+now + 120 * 1000)
 
-        const session = new Session(username, expiresAt)
+        const session = new Session(username, expiresAt, now)
         sessions[sessionToken] = session
 
+        console.log(`New user signup ${username}`)
         console.log(sessions)
 
         res.cookie("session_token", sessionToken, { expires: expiresAt, sameSite:'none', secure: true})
@@ -311,23 +325,23 @@ app.post("/login", expressAsyncHandler(async (req, res) => {
 
     const hash = usersObj[username]
 
-    console.log(hash)
-        bcrypt.compare(password, hash, async function(err, result) {
-            if(result) {
-                const sessionToken = uuidv4()
+    bcrypt.compare(password, hash, async function(err, result) {
+        if(result) {
+            const sessionToken = uuidv4()
+
+            const now = new Date()
+            const expiresAt = new Date(+now + 120 * 1000)
     
-                const now = new Date()
-                const expiresAt = new Date(+now + 120 * 1000)
-        
-                const session = new Session(username, expiresAt)
-                sessions[sessionToken] = session
-        
-                res.cookie("session_token", sessionToken, { expires: expiresAt, sameSite:'none', secure: true})
-                res.send(username)
-            }else{
-                res.send("Wrong password")
-            }
-        });
+            const session = new Session(username, expiresAt, now)
+            sessions[sessionToken] = session
+            console.log(`User signin ${username}`)
+
+            res.cookie("session_token", sessionToken, { expires: expiresAt, sameSite:'none', secure: true})
+            res.send(username)
+        }else{
+            res.send("Wrong password")
+        }
+    });
 }))
 
 app.post("/logout", expressAsyncHandler(async (req, res) => {
@@ -419,8 +433,6 @@ app.get("/getManga", expressAsyncHandler(authenticateUser), async function(req,r
     const links = linksJson[mangaName]
     const chapterKeys = Object.keys(links).filter( key => key !== "poster").map(key => parseFloat(key)).sort(function(a,b) { return a - b;}).map(key => key.toString())
 
-    console.log(chapterKeys)
-
     res.send(chapterKeys)
 });
 
@@ -430,10 +442,6 @@ app.get("/getChapter", expressAsyncHandler(authenticateUser), async function(req
     const chapter = req.query.chapter
     const username = res.locals.username
 
-    console.log(mangaName)
-    console.log(chapter)
-
-
     const rawData = await fs.readFileSync(`links${username}.json`);
     let linksJson = {}
     if (rawData.length !== 0) {
@@ -442,9 +450,6 @@ app.get("/getChapter", expressAsyncHandler(authenticateUser), async function(req
 
     const links = linksJson[mangaName][chapter]
     
-
-    console.log(`reached getChapter call returned ${chapter, links}`)
-
     res.send({chapter, links})
 });
 
@@ -490,8 +495,6 @@ app.post("/addManga", expressAsyncHandler(authenticateUser), async function(req,
     const chapterKeys = Object.keys(sorted[mangaName]).filter( key => key !== "poster").map(key => parseFloat(key)).sort(function(a,b) { return a - b;}).map(key => key.toString())
 
     saveState({[mangaName]:saveObject[mangaName][chapterKeys[0]]}, {[mangaName]:0}, {[mangaName]:chapterKeys[0]}, username)
-
-    console.log(JSON.stringify(chapterKeys))
 
     res.send({metaData:{id: uuidv4(), name: mangaName, poster: poster}, chapters: chapterKeys})
 });
