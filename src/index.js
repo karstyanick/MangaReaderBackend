@@ -402,6 +402,30 @@ app.post("/save", expressAsyncHandler(authenticateUser), async function(req, res
     res.send("success")
 })
 
+app.post("/deleteManga", expressAsyncHandler(authenticateUser), async function(req, res, next){
+    const username = res.locals.username
+    const mangaName = req.body.name
+
+    const rawSaveData = await fs.readFileSync(`save${username}.json`);
+    const rawLinksData = await fs.readFileSync(`links${username}.json`);
+    let saveJson = {}
+    let linksJson = {}
+    if (rawSaveData.length !== 0 && rawLinksData.length !== 0) {
+        saveJson = JSON.parse(rawSaveData);
+        linksJson = JSON.parse(rawLinksData)
+    }
+
+    delete saveJson.chapter[mangaName]
+    delete saveJson.chapterNumber[mangaName]
+    delete saveJson.page[mangaName]
+    delete linksJson[mangaName]
+
+    fs.writeFileSync(`save${username}.json`, JSON.stringify(saveJson, null, 2));
+    fs.writeFileSync(`links${username}.json`, JSON.stringify(linksJson, null, 2));
+
+    res.send("success")
+})
+
 async function saveState(chapter, page, chapterNumber, username){
     const rawData = await fs.readFileSync(`save${username}.json`);
     let saveJson = {}
