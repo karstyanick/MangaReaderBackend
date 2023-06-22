@@ -157,7 +157,7 @@ class Session {
     }
 
     isExpired() {
-        this.expiresAt < (new Date())
+        this.expiresAt.getTime() < Date.now()
     }
 }
 
