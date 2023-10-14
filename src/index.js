@@ -11,7 +11,8 @@ const createError = require('http-errors')
 const http = require("http")
 const https = require('https');
 const bcrypt = require("bcrypt")
-const cookieParser = require("cookie-parser")
+const cookieParser = require("cookie-parser");
+const { format } = require("date-fns");
 const allMangas = {}
 let allMangasReturn;
 //const origin = "http://localhost:3000"
@@ -59,92 +60,27 @@ function getPoster(htmlContent, mangaName){
 }
 
 function generatePageObjects(htmlContent){
-    let regex = /https:\/\/official-ongoing-2.gamindustri.us\/manga\/.*?\.png/g
-    let duplicatedPageLinks = [...htmlContent.matchAll(regex)].map(page => page[0])
-    let pageLinks = []
-    for (let i = 0; i < duplicatedPageLinks.length-6; i = i+2) {
-        pageLinks.push(duplicatedPageLinks[i]);
-    };
-    let pageObjects = pageLinks.map(link => ({"original": link}))
+   
+    let pageObjects = []
 
-    if(pageObjects.length === 0){
-        regex = /https:\/\/scans-hot\.leanbox.us\/manga.*?\.png/g
+    const regexList = [
+        /https:\/\/scans.*?\/manga\/.*?\.png/g,
+        /https:\/\/official.*?\/manga\/.*?\.png/g,
+        /https:\/\/temp.*?\/manga\/.*?\.png/g,
+        /https:\/\/hot.*?\/manga\/.*?\.png/g
+    ]
+
+    regexList.forEach(regex => {
         duplicatedPageLinks = [...htmlContent.matchAll(regex)].map(page => page[0])
         pageLinks = []
         for (let i = 0; i < duplicatedPageLinks.length-6; i = i+2) {
             pageLinks.push(duplicatedPageLinks[i]);
         };
-        pageObjects = pageLinks.map(link => ({"original": link}))
-    }
+        pageObjects = pageObjects.concat(pageLinks.map(link => ({"original": link})))
+    });
 
     if(pageObjects.length === 0){
-        regex = /https:\/\/scans-complete.hydaelyn.us\/manga\/.*?\.png/g
-        duplicatedPageLinks = [...htmlContent.matchAll(regex)].map(page => page[0])
-        pageLinks = []
-        for (let i = 0; i < duplicatedPageLinks.length-6; i = i+2) {
-            pageLinks.push(duplicatedPageLinks[i]);
-        };
-        pageObjects = pageLinks.map(link => ({"original": link}))
-    }
-
-    if(pageObjects.length === 0){
-        regex = /https:\/\/official-complete-1\.granpulse.us\/manga\/.*?\.png/g
-        duplicatedPageLinks = [...htmlContent.matchAll(regex)].map(page => page[0])
-        pageLinks = []
-        for (let i = 0; i < duplicatedPageLinks.length-6; i = i+2) {
-            pageLinks.push(duplicatedPageLinks[i]);
-        };
-        pageObjects = pageLinks.map(link => ({"original": link}))
-    }
-
-    if(pageObjects.length === 0){
-        regex = /https:\/\/official-complete-2\.eorzea\.us\/manga\/.*?\.png/g
-        duplicatedPageLinks = [...htmlContent.matchAll(regex)].map(page => page[0])
-        pageLinks = []
-        for (let i = 0; i < duplicatedPageLinks.length-6; i = i+2) {
-            pageLinks.push(duplicatedPageLinks[i]);
-        };
-        pageObjects = pageLinks.map(link => ({"original": link}))
-    }
-
-    if(pageObjects.length === 0){
-        regex = /https:\/\/official-ongoing-1.ivalice.us\/manga\/.*?.png/g
-        duplicatedPageLinks = [...htmlContent.matchAll(regex)].map(page => page[0])
-        pageLinks = []
-        for (let i = 0; i < duplicatedPageLinks.length-6; i = i+2) {
-            pageLinks.push(duplicatedPageLinks[i]);
-        };
-        pageObjects = pageLinks.map(link => ({"original": link}))
-    }
-
-    if(pageObjects.length === 0){
-        regex = /https:\/\/temp\.compsci88\.com\/manga\/.*?.png/g
-        duplicatedPageLinks = [...htmlContent.matchAll(regex)].map(page => page[0])
-        pageLinks = []
-        for (let i = 0; i < duplicatedPageLinks.length-6; i = i+2) {
-            pageLinks.push(duplicatedPageLinks[i]);
-        };
-        pageObjects = pageLinks.map(link => ({"original": link}))
-    }
-
-    if(pageObjects.length === 0){
-        regex = /https:\/\/scans-ongoing-1\.lastation\.us\/manga\/.*?.png/g
-        duplicatedPageLinks = [...htmlContent.matchAll(regex)].map(page => page[0])
-        pageLinks = []
-        for (let i = 0; i < duplicatedPageLinks.length-6; i = i+2) {
-            pageLinks.push(duplicatedPageLinks[i]);
-        };
-        pageObjects = pageLinks.map(link => ({"original": link}))
-    }
-
-    if(pageObjects.length === 0){
-        regex = /https:\/\/scans-ongoing-2\.planeptune\.us\/manga\/.*?.png/g
-        duplicatedPageLinks = [...htmlContent.matchAll(regex)].map(page => page[0])
-        pageLinks = []
-        for (let i = 0; i < duplicatedPageLinks.length-6; i = i+2) {
-            pageLinks.push(duplicatedPageLinks[i]);
-        };
-        pageObjects = pageLinks.map(link => ({"original": link}))
+        throw createError(404, "No matching regex pattern found")
     }
 
     return pageObjects
@@ -221,7 +157,7 @@ class Session {
     }
 
     isExpired() {
-        this.expiresAt < (new Date())
+        this.expiresAt.getTime() < Date.now()
     }
 }
 
@@ -237,7 +173,16 @@ const authenticateUser = async (req, res, next) => {
         throw createError(401, 'No session token in cookies')
     }
 
-    console.log(`sessions: ${JSON.stringify(sessions)}`)
+    const sessionPrintObj = Object.entries(sessions).reduce((result, [key, value]) => {
+        const { username, ...data } = value;
+        result[username] = {
+            expiresAt:  format(data.expiresAt, "MMM do hh:mm:ss"),
+            lastCall:  format(data.lastCall, "MMM do hh:mm:ss")
+        };
+        return result;
+    }, {});
+
+    console.log(`Sessions: ${JSON.stringify(sessionPrintObj, null, 2)}`)
     
     userSession = sessions[sessionToken]
     if (!userSession) {
@@ -305,8 +250,6 @@ app.post("/signup", expressAsyncHandler(async(req, res) => {
         sessions[sessionToken] = session
 
         console.log(`New user signup ${username}`)
-        console.log(sessions)
-
         res.cookie("session_token", sessionToken, { expires: expiresAt, sameSite:'none', secure: true})
         res.send(username)
     });
@@ -398,6 +341,30 @@ app.post("/save", expressAsyncHandler(authenticateUser), async function(req, res
 
 
     await saveState(chapter, page, chapterNumber, username)
+
+    res.send("success")
+})
+
+app.post("/deleteManga", expressAsyncHandler(authenticateUser), async function(req, res, next){
+    const username = res.locals.username
+    const mangaName = req.body.name
+
+    const rawSaveData = await fs.readFileSync(`save${username}.json`);
+    const rawLinksData = await fs.readFileSync(`links${username}.json`);
+    let saveJson = {}
+    let linksJson = {}
+    if (rawSaveData.length !== 0 && rawLinksData.length !== 0) {
+        saveJson = JSON.parse(rawSaveData);
+        linksJson = JSON.parse(rawLinksData)
+    }
+
+    delete saveJson.chapter[mangaName]
+    delete saveJson.chapterNumber[mangaName]
+    delete saveJson.page[mangaName]
+    delete linksJson[mangaName]
+
+    fs.writeFileSync(`save${username}.json`, JSON.stringify(saveJson, null, 2));
+    fs.writeFileSync(`links${username}.json`, JSON.stringify(linksJson, null, 2));
 
     res.send("success")
 })
@@ -502,9 +469,9 @@ app.post("/addManga", expressAsyncHandler(authenticateUser), async function(req,
 
 if(process.env.NODE_ENV === 'production'){
 
-    const privateKey = fs.readFileSync('/etc/letsencrypt/live/mangareaderbackend.lol/privkey.pem', 'utf8');
-    const certificate = fs.readFileSync('/etc/letsencrypt/live/mangareaderbackend.lol/cert.pem', 'utf8');
-    const ca = fs.readFileSync('/etc/letsencrypt/live/mangareaderbackend.lol/chain.pem', 'utf8');
+    const privateKey = fs.readFileSync('/etc/letsencrypt/live/reallfluffy.site/privkey.pem', 'utf8');
+    const certificate = fs.readFileSync('/etc/letsencrypt/live/reallfluffy.site/cert.pem', 'utf8');
+    const ca = fs.readFileSync('/etc/letsencrypt/live/reallfluffy.site/chain.pem', 'utf8');
 
     const credentials = {
         key: privateKey,
@@ -564,6 +531,29 @@ if(process.env.NODE_ENV === 'production'){
     });
 }
 
+app.use((err, req, res, next) => {    
+    
+    let errCode = err.errCode || err.status || 500;
 
+    if (errCode < 400){
+        errCode = 500;
+    }
 
+    res.statusCode = errCode;
+
+    const body = {
+        errCode: errCode,
+        name: err.name,
+        message: err.message,
+        extraParams: err.extraParams
+    };
+
+    if (errCode >= 500) {
+        console.error(err.stack || '');
+    }
+
+    console.error(JSON.stringify(body));
+    
+    res.json(body);
+})
 
