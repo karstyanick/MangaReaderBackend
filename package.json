@@ -2,6 +2,10 @@
   "name": "mangareaderBackend",
   "version": "0.1.0",
   "private": true,
+  "scripts": {
+    "dev": "tsc -p . && ts-node-dev src/index.ts",
+    "prod": "tsc -p . && ts-node-dev src/index.ts"
+  },
   "dependencies": {
     "@testing-library/jest-dom": "^5.16.3",
     "@testing-library/react": "^12.1.4",
@@ -21,15 +25,14 @@
     "lodash": "^4.17.21",
     "nodemon": "^2.0.15",
     "puppeteer": "^15.3.2",
+    "ts-node": "^10.9.1",
+    "ts-node-dev": "^2.0.0",
     "uuid": "^8.3.2",
     "web-vitals": "^2.1.4"
   },
-  "scripts": {
-    "dev": "node ./src/index.js",
-    "prod": "node ./src/index.js"
-  },
   "devDependencies": {
     "@types/bcrypt": "^5.0.0",
+    "@types/lodash": "^4.14.199",
     "@types/uuid": "^9.0.5",
     "typescript": "^5.2.2"
   }

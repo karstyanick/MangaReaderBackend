@@ -2,9 +2,10 @@ import { RequestHandler, Request, Response, NextFunction } from "express";
 import fs from "fs"
 import { v4 as uuidv4 } from "uuid";
 import { LinksJson, SaveJson } from "../model"
-import { mangasDirectoryReturn } from "../index"
+import { mangasDirectoryReturn } from "../init"
 
-export const init: RequestHandler = async function(req: Request, res: Response, next: NextFunction){
+
+export const initPage: RequestHandler = async function(req: Request, res: Response, next: NextFunction){
     const username = res.locals.username
     const rawData = fs.readFileSync(`links${username}.json`).toString()
     const saveData = fs.readFileSync(`save${username}.json`).toString()
@@ -39,3 +40,5 @@ export const init: RequestHandler = async function(req: Request, res: Response, 
 
     res.send(initObject)
 }
+
+export default initPage

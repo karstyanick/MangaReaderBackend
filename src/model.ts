@@ -21,7 +21,7 @@ export interface LinksJson {
     }
 }
 
-export interface MangasDirectoryReturn {
+export type MangasDirectoryReturn = {
     label: string
     id: string
-}
+}[]

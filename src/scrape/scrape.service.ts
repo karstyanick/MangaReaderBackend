@@ -1,11 +1,18 @@
+import createHttpError from "http-errors";
 import * as puppeteer from "puppeteer"
+import { LinksJson } from "../model"
 
 type ChapterObjects = {
     [key: string]: {
         chapterLink: string
     }
-}[]
+}
 
+export interface MangaChapters {
+    [key: string]: {
+        original: string
+    }[]
+}
 export class ScrapeService {
 
     async fetch(link: string, selector: string){
@@ -39,9 +46,9 @@ export class ScrapeService {
         return posterLink[0]
     }
     
-    generatePageObjects(htmlContent){
+    generatePageObjects(htmlContent: string){
        
-        let pageObjects = []
+        let pageObjects: {original: string}[] = []
     
         const regexList = [
             /https:\/\/scans.*?\/manga\/.*?\.png/g,
@@ -52,15 +59,17 @@ export class ScrapeService {
     
         regexList.forEach(regex => {
             const duplicatedPageLinks = [...htmlContent.matchAll(regex)].map(page => page[0])
-            const pageLinks = []
+            const pageLinks: string[] = []
+
             for (let i = 0; i < duplicatedPageLinks.length-6; i = i+2) {
                 pageLinks.push(duplicatedPageLinks[i]);
             };
+            
             pageObjects = pageObjects.concat(pageLinks.map(link => ({"original": link})))
         });
     
         if(pageObjects.length === 0){
-            throw createError(404, "No matching regex pattern found")
+            throw createHttpError(404, "No matching regex pattern found")
         }
     
         return pageObjects
@@ -73,7 +82,7 @@ export class ScrapeService {
         return chaptersObject
     }
     
-    async getPagesFromChapters(chapterObjects: ChapterObjects, chapterRange: string){
+    async getPagesFromChapters(chapterObjects: ChapterObjects, chapterRange: string): Promise<MangaChapters>{
         const keys = Object.keys(chapterObjects).map(key => parseFloat(key)).sort(function(a,b) { return a - b;})
         const wholeChapters = Object.fromEntries(Object.entries(chapterObjects).filter(([key]) => parseFloat(key) % 1 === 0));
         const dotChapters = Object.fromEntries(Object.entries(chapterObjects).filter(([key]) => parseFloat(key) % 1 !== 0));
@@ -82,6 +91,8 @@ export class ScrapeService {
         let start: number;
         let end: number; 
     
+        let completeObject: MangaChapters = {}
+
         if(chapterRange === "latest"){
             start = keys[keys.length - 1]
             end = keys[keys.length - 1]
@@ -104,23 +115,19 @@ export class ScrapeService {
                 end = keys[keys.length - 1]
             }
     
-            var completeObject = {}
             for(let i = start; i <= end; i++){
                 if(wholeChapters[i]){
-
-                    wholeChapters[i]
-
-                    const pageHtmlContent = await this.fetch(wholeChapters[i]["Chapter Link"], "")
-                    const pageObjects = generatePageObjects(pageHtmlContent)
+                    const pageHtmlContent = await this.fetch(wholeChapters[i].chapterLink, "")
+                    const pageObjects = this.generatePageObjects(pageHtmlContent)
                     completeObject = Object.assign(completeObject, {[i]: pageObjects})
-                    console.log("Chapter " + wholeChapters[i]["Chapter Link"] + " done")
+                    console.log("Chapter " + wholeChapters[i].chapterLink + " done")
                 }
                 for(let j = 1; j < 10; j++){
                     if(dotChapters[`${i}.${j}`]){
-                        const pageHtmlContent = await this.fetch(dotChapters[`${i}.${j}`]["Chapter Link"], "")
-                        const pageObjects = generatePageObjects(pageHtmlContent)
+                        const pageHtmlContent = await this.fetch(dotChapters[`${i}.${j}`].chapterLink, "")
+                        const pageObjects = this.generatePageObjects(pageHtmlContent)
                         completeObject = Object.assign(completeObject, {[`${i}.${j}`]: pageObjects})
-                        console.log("Chapter " + dotChapters[`${i}.${j}`]["Chapter Link"] + " done")
+                        console.log("Chapter " + dotChapters[`${i}.${j}`].chapterLink + " done")
                     }
                 }
             }
