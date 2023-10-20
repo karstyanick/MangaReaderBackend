@@ -1,13 +1,16 @@
+import bcrypt from "bcrypt";
 import { NextFunction, Request, RequestHandler, Response } from "express";
+import fs from "fs";
 import createHttpError from "http-errors";
-import fs from "fs"
-import bcrypt from "bcrypt"
-import { v4 as uuidv4 } from "uuid"
-import { sessions, Session } from "./sessions";
+import jsonwebtoken from "jsonwebtoken";
+import { validateEnvironmentVariable } from "../business logic/utils";
+import { Session, sessions } from "./sessions";
 
 export const signup: RequestHandler = async(req: Request, res: Response, next: NextFunction) => {
     const username = req.body.username
     const password = req.body.password
+
+    const secret = validateEnvironmentVariable("JWT_SECRET")
 
     const users = fs.readFileSync('users.json').toString()
     const oldUsers = JSON.parse(users)
@@ -35,17 +38,20 @@ export const signup: RequestHandler = async(req: Request, res: Response, next: N
         fs.closeSync(fs.openSync(`links${username}.json`, 'w'))
         fs.closeSync(fs.openSync(`save${username}.json`, 'w'))
 
-        const sessionToken = uuidv4()
+        const token = jsonwebtoken.sign({ username }, secret, { expiresIn: "30d" });
 
         const now = new Date()
         const expiresAt = new Date(+now + 2629800000)
 
         const session = new Session(username, expiresAt, now)
-        sessions[sessionToken] = session
+        sessions[token] = session
 
         console.log(`New user signup ${username}`)
-        res.cookie("session_token", sessionToken, { expires: expiresAt, sameSite:'none', secure: true})
-        res.send(username)
+        //res.cookie("session_token", sessionToken, { expires: expiresAt, sameSite:'none', secure: true})
+        res.send({
+            username,
+            token
+        })
     });
 }
 

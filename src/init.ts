@@ -4,11 +4,15 @@ const https = require("https")
 const http = require("http")
 import { MangasDirectoryReturn } from "./model"
 import { Express } from "express-serve-static-core"
+import * as dotenv from "dotenv";
 
 export let mangasDirectoryReturn: MangasDirectoryReturn
 export let mangasDirectory: any = {}
 
 export async function init(app: Express){
+
+    dotenv.config()
+
     if(process.env.NODE_ENV === 'production'){
 
         const privateKey = fs.readFileSync('/etc/letsencrypt/live/reallfluffy.site/privkey.pem', 'utf8');

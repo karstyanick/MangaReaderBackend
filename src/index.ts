@@ -1,24 +1,22 @@
-import { errorHandler } from "./middleware/errors/error_handler"
-import { login } from "./users/login"
-import { signup } from "./users/signup"
-import { logout } from "./users/logout"
-import { authenticateUser } from "./middleware/auth/authenticate_user"
-import { MangasDirectoryReturn } from "./model"
+import express from "express"
 import { addManga } from "./dispatch/add_manga"
-import { initPage } from "./dispatch/init_page"
+import deleteManga from "./dispatch/delete_Manga"
 import getChapter from "./dispatch/get_Chapter"
 import getManga from "./dispatch/get_Manga"
-import deleteManga from "./dispatch/delete_Manga"
+import { initPage } from "./dispatch/init_page"
 import save from "./dispatch/save"
-import express from "express"
 import { init } from "./init"
+import { authenticateUser } from "./middleware/auth/authenticate_user"
+import { errorHandler } from "./middleware/errors/error_handler"
+import { login } from "./users/login"
+import { logout } from "./users/logout"
+import { signup } from "./users/signup"
+import saveDecryptKeyForUser from "./middleware/auth/save_decrypt_key"
 
 const cors = require("cors");
 const bodyParser = require("body-parser")
-var _ = require('lodash');
 const expressAsyncHandler = require("express-async-handler");
 const cookieParser = require("cookie-parser");
-
 
 const frontendHost = "http://localhost:3000"
 //const frontendHost = "https://fluffy-jalebi-fdc9ee.netlify.app" //REMOVE BACKSLASH FROM END !!!!!!
@@ -54,4 +52,6 @@ app.get("/getChapter", expressAsyncHandler(authenticateUser), expressAsyncHandle
 
 app.post("/addManga", expressAsyncHandler(authenticateUser), expressAsyncHandler(addManga))
 
-app.use(errorHandler)
+app.post("/saveDecryptionKey", expressAsyncHandler(authenticateUser), expressAsyncHandler(saveDecryptKeyForUser))
+
+app.use(errorHandler())
