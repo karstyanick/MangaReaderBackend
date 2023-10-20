@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "build": "tsc --build",
     "dev": "tsc -p . && ts-node-dev src/index.ts",
     "prod": "tsc -p . && ts-node-dev src/index.ts"
   },
