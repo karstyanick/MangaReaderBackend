@@ -18,8 +18,8 @@ const bodyParser = require("body-parser")
 const expressAsyncHandler = require("express-async-handler");
 const cookieParser = require("cookie-parser");
 
-const frontendHost = "http://localhost:3000"
-//const frontendHost = "https://fluffy-jalebi-fdc9ee.netlify.app" //REMOVE BACKSLASH FROM END !!!!!!
+//const frontendHost = "http://localhost:3000"
+const frontendHost = "https://fluffy-jalebi-fdc9ee.netlify.app" //REMOVE BACKSLASH FROM END !!!!!!
 
 const app = express()
 app.use(bodyParser.json())
