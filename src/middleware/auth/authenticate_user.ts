@@ -41,6 +41,11 @@ export const authenticateUser: RequestHandler = async (req: Request, res: Respon
 
         next();
     }catch(e){
+        if((e as jsonwebtoken.TokenExpiredError).name){
+            delete sessions[token as string]
+            throw createHttpError(401, "Expired token")
+        }
+
         throw createHttpError(403, 'Forbidden error. Token could not be verified')
     }
 }

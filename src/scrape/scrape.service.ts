@@ -19,6 +19,8 @@ export class ScrapeService {
         const browser = await puppeteer.launch();
         const page = await browser.newPage();
         
+        page.setDefaultTimeout(120000);
+
         await page.goto(link);
         
         if(selector === ""){
