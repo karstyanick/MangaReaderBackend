@@ -18,13 +18,14 @@ const bodyParser = require("body-parser")
 const expressAsyncHandler = require("express-async-handler");
 const cookieParser = require("cookie-parser");
 
-//const frontendHost = "http://localhost:3000"
+const frontendHostLocal = "http://localhost:3000"
 const frontendHost = "https://fluffy-jalebi-fdc9ee.netlify.app" //REMOVE BACKSLASH FROM END !!!!!!
+const frontendHostBeta = "https://timely-kangaroo-ebd979.netlify.app" //REMOVE BACKSLASH FROM END !!!!!!
 
 const app = express()
 app.use(bodyParser.json())
 app.use(cors({
-    "origin": frontendHost,
+    "origin": [frontendHost, frontendHostLocal, frontendHostBeta],
     "methods": "GET,HEAD,PUT,PATCH,POST,DELETE",
     "preflightContinue": false,
     "optionsSuccessStatus": 204,
