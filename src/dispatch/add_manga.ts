@@ -45,7 +45,7 @@ export const addManga: RequestHandler = async function(req: Request, res: Respon
     
     const chapterKeys = Object.keys(sorted[mangaName]).filter( key => key !== "poster").map(key => parseFloat(key)).sort(function(a,b) { return a - b;}).map(key => key.toString())
 
-    saveState({[mangaName]:saveObject[mangaName][chapterKeys[0]]} as MangaChapters, {[mangaName]:0}, {[mangaName]:chapterKeys[0]}, username)
+    saveState({[mangaName]:saveObject[mangaName][chapterKeys[0]]} as MangaChapters, {[mangaName]:0}, {[mangaName]:0}, {[mangaName]:chapterKeys[0]}, username)
 
     res.send({metaData:{id: uuidv4(), name: mangaName, poster: poster}, chapters: chapterKeys})
 }

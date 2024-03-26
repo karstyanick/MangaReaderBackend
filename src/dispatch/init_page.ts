@@ -14,6 +14,7 @@ export const initPage: RequestHandler = async function(req: Request, res: Respon
     let saveJson: SaveJson = {
         chapter: {},
         page: {},
+        scrollOffset: {},
         chapterNumber: {}
     }
     
@@ -33,9 +34,11 @@ export const initPage: RequestHandler = async function(req: Request, res: Respon
         state: {
             currentChapter: saveJson.chapter,
             currentPage: saveJson.page,
+            currentScrollOffset: saveJson.scrollOffset,
             currentChapterNumber: saveJson.chapterNumber
         },
-        availableMangas: mangasDirectoryReturn
+        availableMangas: mangasDirectoryReturn,
+        scrollPreference: saveJson.scrollPreference || "horizontal"
     }
 
     res.send(initObject)

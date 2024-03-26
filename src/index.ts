@@ -12,6 +12,7 @@ import { login } from "./users/login"
 import { logout } from "./users/logout"
 import { signup } from "./users/signup"
 import saveDecryptKeyForUser from "./middleware/auth/save_decrypt_key"
+import saveDefaultValues from "./dispatch/saveDefaultValues"
 
 const cors = require("cors");
 const bodyParser = require("body-parser")
@@ -54,5 +55,7 @@ app.get("/getChapter", expressAsyncHandler(authenticateUser), expressAsyncHandle
 app.post("/addManga", expressAsyncHandler(authenticateUser), expressAsyncHandler(addManga))
 
 app.post("/saveDecryptionKey", expressAsyncHandler(authenticateUser), expressAsyncHandler(saveDecryptKeyForUser))
+
+app.post("/saveDefaultValues", expressAsyncHandler(authenticateUser), expressAsyncHandler(saveDefaultValues))
 
 app.use(errorHandler())

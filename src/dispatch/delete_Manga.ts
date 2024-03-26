@@ -12,6 +12,7 @@ export const deleteManga: RequestHandler = async function(req: Request, res: Res
     let saveJson: SaveJson = {
         chapter: {},
         page: {},
+        scrollOffset: {},
         chapterNumber: {}
     }
     let linksJson: LinksJson = {}
@@ -24,6 +25,7 @@ export const deleteManga: RequestHandler = async function(req: Request, res: Res
     delete saveJson.chapter[mangaName]
     delete saveJson.chapterNumber[mangaName]
     delete saveJson.page[mangaName]
+    delete saveJson.scrollOffset[mangaName]
     delete linksJson[mangaName]
 
     fs.writeFileSync(`save${username}.json`, JSON.stringify(saveJson, null, 2));

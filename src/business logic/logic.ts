@@ -2,12 +2,13 @@ import { SaveJson } from "../model";
 import fs from "fs"
 import { MangaChapters } from "../scrape/scrape.service";
 
-export async function saveState(chapter: MangaChapters, page: {[key: string]: number}, chapterNumber: {[key: string]: string}, username: string){
+export async function saveState(chapter: MangaChapters, page: {[key: string]: number}, scrollOffset:{[key: string]: number}, chapterNumber: {[key: string]: string}, username: string){
     const rawData = fs.readFileSync(`save${username}.json`).toString();
     let saveJson: SaveJson = {
         chapter: {},
         page: {},
-        chapterNumber: {}
+        scrollOffset: {},
+        chapterNumber: {},
     }
 
     if (rawData.length !== 0) {
@@ -17,7 +18,9 @@ export async function saveState(chapter: MangaChapters, page: {[key: string]: nu
     const saveComb = {
         chapter: {...saveJson.chapter, ...chapter},
         page: {...saveJson.page, ...page},
-        chapterNumber: {...saveJson.chapterNumber, ...chapterNumber}
+        scrollOffset: {...saveJson.scrollOffset, ...scrollOffset},
+        chapterNumber: {...saveJson.chapterNumber, ...chapterNumber},
+        scrollPreference: saveJson.scrollPreference
     }
 
     fs.writeFileSync(`save${username}.json`, JSON.stringify(saveComb, null, 2))

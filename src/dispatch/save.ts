@@ -5,10 +5,11 @@ import { MangaChapters } from "../scrape/scrape.service";
 export const save: RequestHandler = async function(req: Request, res: Response, next: NextFunction){
     const chapter: MangaChapters = req.body.chapter
     const page: {[key: string]: number} = req.body.page
+    const scrollOffset: {[key: string]: number} = req.body.scrollOffset
     const chapterNumber: {[key: string]: string} = req.body.chapterNumber
     const username: string = res.locals.username
 
-    await saveState(chapter, page, chapterNumber, username)
+    await saveState(chapter, page, scrollOffset, chapterNumber, username)
     res.send("success")
 }
 
