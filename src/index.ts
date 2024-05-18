@@ -20,8 +20,8 @@ const expressAsyncHandler = require("express-async-handler");
 const cookieParser = require("cookie-parser");
 
 const frontendHostLocal = "http://localhost:3000"
-const frontendHost = "https://fluffy-jalebi-fdc9ee.netlify.app" //REMOVE BACKSLASH FROM END !!!!!!
-const frontendHostBeta = "https://timely-kangaroo-ebd979.netlify.app" //REMOVE BACKSLASH FROM END !!!!!!
+const frontendHost = "https://www.reallyfluffy.dev" //REMOVE BACKSLASH FROM END !!!!!!
+const frontendHostBeta = "https://beta.reallyfluffy.dev" //REMOVE BACKSLASH FROM END !!!!!!
 
 const app = express()
 app.use(bodyParser.json())
