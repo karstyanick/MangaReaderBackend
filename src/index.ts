@@ -5,14 +5,13 @@ import getChapter from "./dispatch/get_Chapter"
 import getManga from "./dispatch/get_Manga"
 import { initPage } from "./dispatch/init_page"
 import save from "./dispatch/save"
+import saveDefaultValues from "./dispatch/saveDefaultValues"
 import { init } from "./init"
 import { authenticateUser } from "./middleware/auth/authenticate_user"
 import { errorHandler } from "./middleware/errors/error_handler"
 import { login } from "./users/login"
 import { logout } from "./users/logout"
 import { signup } from "./users/signup"
-import saveDecryptKeyForUser from "./middleware/auth/save_decrypt_key"
-import saveDefaultValues from "./dispatch/saveDefaultValues"
 
 const cors = require("cors");
 const bodyParser = require("body-parser")
@@ -53,8 +52,6 @@ app.get("/getManga", expressAsyncHandler(authenticateUser), expressAsyncHandler(
 app.get("/getChapter", expressAsyncHandler(authenticateUser), expressAsyncHandler(getChapter));
 
 app.post("/addManga", expressAsyncHandler(authenticateUser), expressAsyncHandler(addManga))
-
-app.post("/saveDecryptionKey", expressAsyncHandler(authenticateUser), expressAsyncHandler(saveDecryptKeyForUser))
 
 app.post("/saveDefaultValues", expressAsyncHandler(authenticateUser), expressAsyncHandler(saveDefaultValues))
 

@@ -1,51 +1,80 @@
-import { RequestHandler, Response, NextFunction, Request } from "express"
-import fs from "fs"
+import axios from "axios";
+import { NextFunction, Request, RequestHandler, Response } from "express";
+import fs from "fs";
+import * as _ from "lodash";
+import { v4 as uuidv4 } from "uuid";
+import { saveState } from "../business logic/logic";
 import { LinksJson } from "../model";
 import { MangaChapters, ScrapeService } from "../scrape/scrape.service";
-import * as _ from "lodash"
-import { saveState } from "../business logic/logic";
-import { v4 as uuidv4 } from "uuid"
 
-export const addManga: RequestHandler = async function(req: Request, res: Response, next: NextFunction){
+export const addManga: RequestHandler = async function(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  let mangaId: string = req.body.id;
+  let label: string = req.body.label;
 
-    let mangaName: string = req.body.name
-    let chapters: string = req.body.chapters
-    const username: string = res.locals.username
+  let chapters: string = req.body.chapters;
+  const username: string = res.locals.username;
 
-    const scrapeService = new ScrapeService()
+  const scrapeService = new ScrapeService();
 
-    const rawData = fs.readFileSync(`links${username}.json`).toString();
-    
-    let linksJson: LinksJson = {}
+  const rawData = fs.readFileSync(`links${username}.json`).toString();
 
-    if (rawData.length !== 0) {
-        linksJson = JSON.parse(rawData);
-    }
+  let linksJson: LinksJson = {};
 
-    const chapterHtmlContent = await scrapeService.fetch(`https://mangasee123.com/manga/${mangaName}/`, ".ShowAllChapters")
-    const poster = scrapeService.getPoster(chapterHtmlContent, mangaName)
-    const chapterObjects = scrapeService.generateChapterObjects(chapterHtmlContent)
-    const completeObject = await scrapeService.getPagesFromChapters(chapterObjects, chapters)
+  if (rawData.length !== 0) {
+    linksJson = JSON.parse(rawData);
+  }
 
-    const saveObject: LinksJson = {[mangaName]:{poster:poster, ...completeObject}}
-    
-    const saveManga = _.merge(saveObject, linksJson)
+  const chapterHtmlContent = await axios.get(`https://weebcentral.com/series/${mangaId}/full-chapter-list`);
 
-    const sorted = Object.keys(saveManga).sort().reduce((accumulator: LinksJson, key) => {
-        if(key !== "poster"){
-            accumulator[key] = saveManga[key]
-            return accumulator
-        }
-        return accumulator
-    }, {})
+  const poster = `https://temp.compsci88.com/cover/normal/${mangaId}.webp`
+  const chapterObjects = scrapeService.generateChapterObjects(chapterHtmlContent.data);
+  const completeObject = await scrapeService.getPagesFromChapters(
+    chapterObjects,
+    chapters
+  );
 
-    fs.writeFileSync(`links${username}.json`, JSON.stringify(sorted, null, 2));
+  const saveObject: LinksJson = {
+    [label]: { poster: poster, ...completeObject },
+  };
 
-    console.log(`Manga added: ${mangaName}`)
-    
-    const chapterKeys = Object.keys(sorted[mangaName]).filter( key => key !== "poster").map(key => parseFloat(key)).sort(function(a,b) { return a - b;}).map(key => key.toString())
+  const saveManga = _.merge(saveObject, linksJson);
 
-    saveState({[mangaName]:saveObject[mangaName][chapterKeys[0]]} as MangaChapters, {[mangaName]:0}, {[mangaName]:0}, {[mangaName]:chapterKeys[0]}, username)
+  const sorted = Object.keys(saveManga)
+    .sort()
+    .reduce((accumulator: LinksJson, key) => {
+      if (key !== "poster") {
+        accumulator[key] = saveManga[key];
+        return accumulator;
+      }
+      return accumulator;
+    }, {});
 
-    res.send({metaData:{id: uuidv4(), name: mangaName, poster: poster}, chapters: chapterKeys})
-}
+  fs.writeFileSync(`links${username}.json`, JSON.stringify(sorted, null, 2));
+
+  console.log(`Manga added: ${label}`);
+
+  const chapterKeys = Object.keys(sorted[label])
+    .filter((key) => key !== "poster")
+    .map((key) => parseFloat(key))
+    .sort(function(a, b) {
+      return a - b;
+    })
+    .map((key) => key.toString());
+
+  saveState(
+    { [label]: saveObject[label][chapterKeys[0]] } as MangaChapters,
+    { [label]: 0 },
+    { [label]: 0 },
+    { [label]: chapterKeys[0] },
+    username
+  );
+
+  res.send({
+    metaData: { id: uuidv4(), name: label, poster: poster },
+    chapters: chapterKeys,
+  });
+};

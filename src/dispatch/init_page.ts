@@ -5,10 +5,25 @@ import { LinksJson, SaveJson } from "../model"
 import { mangasDirectoryReturn } from "../init"
 
 
-export const initPage: RequestHandler = async function(req: Request, res: Response, next: NextFunction){
+export const initPage: RequestHandler = async function(req: Request, res: Response, next: NextFunction) {
     const username = res.locals.username
-    const rawData = fs.readFileSync(`links${username}.json`).toString()
-    const saveData = fs.readFileSync(`save${username}.json`).toString()
+
+    let rawData: string;
+    let saveData: string;
+
+    try {
+        rawData = fs.readFileSync(`links${username}.json`).toString()
+    } catch {
+        fs.writeFileSync(`links${username}.json`, '{}');
+        rawData = '{}';
+    }
+
+    try {
+        saveData = fs.readFileSync(`save${username}.json`).toString()
+    } catch {
+        fs.writeFileSync(`save${username}.json`, '{}');
+        saveData = '{}';
+    }
 
     let linksJson: LinksJson = {}
     let saveJson: SaveJson = {
@@ -17,7 +32,7 @@ export const initPage: RequestHandler = async function(req: Request, res: Respon
         scrollOffset: {},
         chapterNumber: {}
     }
-    
+
     if (rawData.length !== 0) {
         linksJson = JSON.parse(rawData);
     }
@@ -26,7 +41,7 @@ export const initPage: RequestHandler = async function(req: Request, res: Respon
     }
 
     const mangaKeys = Object.keys(linksJson)
-    const initPosterList = mangaKeys.map(manga => ({id: uuidv4(), name: manga, poster: linksJson[manga].poster}));
+    const initPosterList = mangaKeys.map(manga => ({ id: uuidv4(), name: manga, poster: linksJson[manga].poster }));
 
     const initObject = {
         username: username,
