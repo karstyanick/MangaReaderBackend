@@ -108,7 +108,6 @@ export class ScrapeService {
 
       for (let i = start; i <= end; i++) {
         if (wholeChapters[i]) {
-          const link = `${wholeChapters[i].chapterLink}/images?is_prev=True&current_page=1&reading_style=long_strip`;
           const result = await axios.get(`${chapterObjects[i].chapterLink}/images?is_prev=True&current_page=1&reading_style=long_strip`);
           const pageObjects = this.generatePageObjects(result.data);
           completeObject = Object.assign(completeObject, { [i]: pageObjects });
@@ -126,6 +125,7 @@ export class ScrapeService {
             );
           }
         }
+        await new Promise((resolve) => setTimeout(resolve, 1000));
       }
     } catch (e) {
       console.log(e);
