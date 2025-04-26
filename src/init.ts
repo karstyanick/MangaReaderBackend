@@ -14,7 +14,7 @@ export async function init(app: Express) {
 
   const limit = 32;
 
-  for (let i = 0; i < 100; i++) {
+  for (let i = 0; i < 10; i++) {
     const result = await axios.get(`https://weebcentral.com/search/data?limit=${limit}&offset=${i * limit}&sort=Popularity&order=Descending&official=Any&anime=Any&adult=Any&display_mode=Minimal%20Display`)
     const regex = /<a href="https:\/\/weebcentral\.com\/series\/(.*?)\/.*?<h2 .*?>(.*?)<\/h2>/gs;
     const matches = [...result.data.matchAll(regex)];

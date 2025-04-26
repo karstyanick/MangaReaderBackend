@@ -1,4 +1,5 @@
 import axios from "axios";
+import * as cheerio from 'cheerio';
 import createHttpError from "http-errors";
 
 type ChapterObjects = {
@@ -49,14 +50,23 @@ export class ScrapeService {
   }
 
   generateChapterObjects(htmlContent: string): ChapterObjects {
-    const regex = /"(https:\/\/weebcentral\.com\/chapters\/.*?)".*?Chapter (.*?)<\/span>/gs;
-    const matchResult = [...htmlContent.matchAll(regex)];
-    const chapterObjects = matchResult.map((page) => ({
-      [page[2]]: {
-        chapterLink: page[1],
-      },
-    }));
-    const chaptersObject: ChapterObjects = Object.assign({}, ...chapterObjects);
+    const $ = cheerio.load(htmlContent);
+    const chaptersObject: ChapterObjects = {};
+  
+    $('a[href*="/chapters/"]').each((_, el) => {
+      const link = $(el).attr('href');
+  
+      const text = $(el).closest('div').text() || $(el).text();
+      const match = text.match(/([A-Za-z\s]*?)\s+(\d+)\b/);
+  
+      if (link && match) {
+        const chapterNumber = match[2];
+        chaptersObject[chapterNumber] = {
+          chapterLink: link.startsWith('http') ? link : `https://weebcentral.com${link}`,
+        };
+      }
+    });
+  
     return chaptersObject;
   }
 
