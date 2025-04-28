@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "build": "tsc --build",
+    "script": "ts-node-dev",
     "dev": "tsc -p . && ts-node-dev src/index.ts",
     "prod": "tsc -p . && ts-node-dev src/index.ts"
   },

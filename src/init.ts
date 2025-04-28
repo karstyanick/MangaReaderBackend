@@ -1,26 +1,11 @@
-import axios from "axios";
 import * as dotenv from "dotenv";
 import { Express } from "express-serve-static-core";
 import fs from "fs";
 import http from "http";
 import https from "https";
-import { MangasDirectoryReturn } from "./model";
-
-export let mangasDirectoryReturn: MangasDirectoryReturn = [];
-export let mangasDirectory: any = {};
 
 export async function init(app: Express) {
   dotenv.config();
-
-  const limit = 32;
-
-  for (let i = 0; i < 10; i++) {
-    const result = await axios.get(`https://weebcentral.com/search/data?limit=${limit}&offset=${i * limit}&sort=Popularity&order=Descending&official=Any&anime=Any&adult=Any&display_mode=Minimal%20Display`)
-    const regex = /<a href="https:\/\/weebcentral\.com\/series\/(.*?)\/.*?<h2 .*?>(.*?)<\/h2>/gs;
-    const matches = [...result.data.matchAll(regex)];
-    const partialDirectory = matches.map(([_, id, label]) => ({ id, label }));
-    mangasDirectoryReturn = mangasDirectoryReturn.concat(partialDirectory);
-  }
 
   if (process.env.NODE_ENV === "production") {
     const privateKey = fs.readFileSync(
