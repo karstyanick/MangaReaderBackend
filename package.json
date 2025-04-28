@@ -6,6 +6,7 @@
     "build": "tsc --build",
     "script": "ts-node-dev",
     "dev": "tsc -p . && ts-node-dev src/index.ts",
+    "debug": "tsc -p . && ts-node-dev --inspect=9229 src/index.ts",
     "prod": "tsc -p . && ts-node-dev src/index.ts"
   },
   "dependencies": {
