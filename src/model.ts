@@ -7,9 +7,6 @@ export interface SaveJson {
     page: {
         [key: string]: number
     },
-    scrollOffset: {
-        [key: string]: number
-    },
     chapterNumber: {
         [key: string]: string
     },
