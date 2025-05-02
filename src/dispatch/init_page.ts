@@ -34,7 +34,6 @@ export const initPage: RequestHandler = async function(req: Request, res: Respon
     let saveJson: SaveJson = {
         chapter: {},
         page: {},
-        scrollOffset: {},
         chapterNumber: {}
     }
     let mangasDirectory: MangasDirectoryReturn = [];
@@ -57,7 +56,6 @@ export const initPage: RequestHandler = async function(req: Request, res: Respon
         state: {
             currentChapter: saveJson.chapter,
             currentPage: saveJson.page,
-            currentScrollOffset: saveJson.scrollOffset,
             currentChapterNumber: saveJson.chapterNumber
         },
         availableMangas: mangasDirectory,

@@ -68,7 +68,6 @@ export const addManga: RequestHandler = async function(
   saveState(
     { [label]: saveObject[label][chapterKeys[0]] } as MangaChapters,
     { [label]: 0 },
-    { [label]: 0 },
     { [label]: chapterKeys[0] },
     username
   );

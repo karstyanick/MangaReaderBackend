@@ -2,7 +2,7 @@ import { RequestHandler, Request, Response, NextFunction } from "express";
 import fs from "fs"
 import { SaveJson } from "../model"
 
-export const saveDefaultValues: RequestHandler = async function(req: Request, res: Response, next: NextFunction){
+export const saveDefaultValues: RequestHandler = async function(req: Request, res: Response, next: NextFunction) {
     const username = res.locals.username
     const scrollPreference = req.body.scrollPreference
     const rawData = fs.readFileSync(`save${username}.json`).toString();
@@ -10,7 +10,6 @@ export const saveDefaultValues: RequestHandler = async function(req: Request, re
     let saveJson: SaveJson = {
         chapter: {},
         page: {},
-        scrollOffset: {},
         chapterNumber: {},
         scrollPreference: "horizontal"
     }
